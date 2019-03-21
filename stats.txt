@@ -1,0 +1,6 @@
+
+<<Stats>>
+Execution Time(milliseconds):342
+Orphan lines:0
+Average Depth:0.75
+Average Size (char):72.25

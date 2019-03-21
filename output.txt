@@ -1,0 +1,47 @@
+{
+  "map": {
+    "root": {
+      "map": {
+        "calls": {
+          "myArrayList": [
+            {
+              "map": {
+                "calls": {
+                  "myArrayList": [
+                    {
+                      "map": {
+                        "calls": {
+                          "myArrayList": []
+                        },
+                        "startTime": "2016-10-20 12:43:34.000",
+                        "endTime": "2016-10-20 12:43:35.000",
+                        "serviceName": "back-end-3"
+                      }
+                    }
+                  ]
+                },
+                "startTime": "2016-10-20 12:43:33.000",
+                "endTime": "2016-10-20 12:43:36.000",
+                "serviceName": "back-end-1"
+              }
+            },
+            {
+              "map": {
+                "calls": {
+                  "myArrayList": []
+                },
+                "startTime": "2016-10-20 12:43:38.000",
+                "endTime": "2016-10-20 12:43:40.000",
+                "serviceName": "back-end-2"
+              }
+            }
+          ]
+        },
+        "startTime": "2016-10-20 12:43:32.000",
+        "endTime": "2016-10-20 12:43:42.000",
+        "serviceName": "front-end"
+      }
+    },
+    "id": "trace1"
+  }
+}
