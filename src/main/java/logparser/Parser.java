@@ -1,12 +1,6 @@
 package logparser;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,7 +9,6 @@ import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -27,11 +20,23 @@ public class Parser {
     Parser() {
     }
 
-    void parseLog(String inputFile, String outputFileName) {
+    void parseLog(String inputFile, String outputFileName, Boolean usingFilesForIO) throws IOException {
 
         long executionStartTime = System.currentTimeMillis();
-        String logs = readLogsFromFile(inputFile);
+        String logs = "";
+        if (usingFilesForIO) {
+            logs = readLogsFromFile(inputFile);
+            if (checkIfFileIsEmpty(inputFile) || logs.split("\n")[0].equals(" ")) {
+                System.out.println("File is empty! Please place log traces to read. Aborting. File read at: " + inputFile);
+                return;
+            }
+        } else {
+            logs = inputFile;
+            System.out.println("Processing logs from standard input..");
+            System.out.println(logs);
+        }
         String[] logLines = logs.split("\n");
+
         List<LogEntry> logEntries = new ArrayList<LogEntry>();
         double averageSize = 0d;
         double averageDepth = 0d;
@@ -39,31 +44,39 @@ public class Parser {
 
         double logLineLengthSum = 0;
         double logDepthSum = 0;
-
+        int count = 0;
         for (String line : logLines) {
+            count++;
             logLineLengthSum += line.length();
             String[] spanSplit = line.split("->");
-            String[] spaceSplit = spanSplit[0].split(" ");
-            String span = spanSplit[1];
-            String startTime = spaceSplit[0] + " " + spaceSplit[1];
-            String endTime = spaceSplit[2] + " " + spaceSplit[3];
-            String traceId = spaceSplit[4];
-            String serviceName = spaceSplit[5];
-            String callerSpan = spaceSplit[6];
-
+            String[] spaceSplit = spanSplit[0].split(" |T");
             LogEntry logEntry = new LogEntry();
-            logEntry.setTraceId(traceId);
-            logEntry.setCallerSpan(callerSpan);
-            logEntry.setServiceName(serviceName);
 
-            logEntry.setSpan(span);
-            logEntry.setStartTime(startTime);
-            logEntry.setEndTime(endTime);
+            try {
+                String span = spanSplit[1];
+                String startTime = spaceSplit[0] + " " + spaceSplit[1];
+                String endTime = spaceSplit[2] + " " + spaceSplit[3];
+                String traceId = spaceSplit[4];
+                String serviceName = spaceSplit[5];
+                String callerSpan = spaceSplit[6];
 
-            logEntries.add(logEntry);
+
+                logEntry.setTraceId(traceId);
+                logEntry.setCallerSpan(callerSpan);
+                logEntry.setServiceName(serviceName);
+
+                logEntry.setSpan(span);
+                logEntry.setStartTime(startTime);
+                logEntry.setEndTime(endTime);
+                logEntries.add(logEntry);
+            } catch (Exception e) {
+                System.out.println("Ignored faulty log entry at Line: "+ count);
+               // e.printStackTrace();
+            }
+
+
         }
         for (LogEntry e : logEntries) {
-
             e.setCalls(findLogEntriesWithCallerSpan(logEntries, e.getSpan()));
         }
         for (LogEntry e : logEntries) {
@@ -76,10 +89,10 @@ public class Parser {
 
         for (String traceId : traceIds) {
 
-            LogEntry rootEntry = findRootLogEntry(logEntries);
+            LogEntry rootEntry = findNullRootLogEntry(logEntries);
 
             if (rootEntry == null)
-                continue;
+                continue; //ignore orphans
 
             traceObject.put("id", traceId);
 
@@ -92,8 +105,7 @@ public class Parser {
             traceObject.put("root", rootObject);
 
         }
-        System.out.println("<<<<<<<<<<Output Tree>>>>>>>>>>>>");
-        System.out.println(getPrettyJSON(traceObject));
+
 
         int orphanLineCount = 0;
         for (int i = 0; i < logEntries.size(); i++) {
@@ -116,10 +128,35 @@ public class Parser {
         stats.append("\nAverage Depth:" + averageDepth);
         stats.append("\nAverage Size (char):" + averageSize);
 
-        System.out.println(stats.toString());
-        writeToFile("stats.txt", stats.toString());
+        if (usingFilesForIO) {
+            if (writeToFile("stats.txt", stats.toString()) == false) return;
+            if (writeToFile(outputFileName, getPrettyJSON(traceObject)) == false) return;
+            System.out.println("<<<<<<<<<<Success! Sent output to the following Files>>>>>>>>>>>>");
+            System.out.println("<Read logs successfully from File: " + inputFile + ">");
+            System.out.println("Statistics written to: <stats.txt>");
+            System.out.println("Output written to: <" + outputFileName + ">");
 
-        writeToFile(outputFileName, getPrettyJSON(traceObject));
+        } else {
+            System.out.println("<<<<<<<<<<Success! Printing Output Tree>>>>>>>>>>>>");
+            System.out.println(traceObject.toString());
+            //System.out.println(getPrettyJSON(traceObject));
+            System.out.println(stats.toString());
+        }
+
+    }
+
+    void parseLogFromStandardInput(String inputFromUser) throws IOException {
+        parseLog(inputFromUser, null, false);
+    }
+
+    private boolean checkIfFileIsEmpty(String inputFile) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(inputFile));
+        if (br.readLine() == null) {
+            br.close();
+            return true;
+        }
+        br.close();
+        return false;
     }
 
     private String getPrettyJSON(JSONObject traceObject) {
@@ -169,7 +206,7 @@ public class Parser {
         return logMap;
     }
 
-    void writeToFile(String outputFileName, String output) {
+    boolean writeToFile(String outputFileName, String output) {
         outputFileName = (outputFileName.length() > 0) ? outputFileName : "output.txt";
         BufferedWriter writer;
         try {
@@ -177,8 +214,10 @@ public class Parser {
             writer = new BufferedWriter(new FileWriter(outputFileName));
             writer.write(output);
             writer.close();
+            return true;
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Cannot write to file. Maybe file doesnot exist" + outputFileName);
+            return false;
         }
 
     }
@@ -193,7 +232,7 @@ public class Parser {
         return filteredLogEntries;
     }
 
-    LogEntry findRootLogEntry(List<LogEntry> logEntries) {
+    LogEntry findNullRootLogEntry(List<LogEntry> logEntries) {
 
         for (LogEntry e : logEntries) {
             if (e.getCallerSpan().contains("null")) {
