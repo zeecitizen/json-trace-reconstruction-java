@@ -3,6 +3,7 @@ package logparser;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+@Deprecated
 public class Graph {
     private ArrayList<LogEntry> nodes = new ArrayList<LogEntry>();
     private HashMap<String, LogEntry> map = new HashMap<String, LogEntry>();

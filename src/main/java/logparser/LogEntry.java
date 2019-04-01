@@ -4,24 +4,34 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.gson.annotations.SerializedName;
 
 public class LogEntry {
 
-    String startTime;
-    String endTime;
+    @SerializedName("id")
+    transient String traceId;
+
+    @SerializedName("service")
     String serviceName;
 
+    @SerializedName("start")
+    String startTime;
+
+    @SerializedName("end")
+    String endTime;
+
+    @SerializedName("calls")
     List<LogEntry> calls;
 
     @JsonIgnore
-    private HashMap<String, LogEntry> map = new HashMap<String, LogEntry>(); //for keeping neighbors in a directed graph
+    private transient HashMap<String, LogEntry> map = new HashMap<String, LogEntry>();
 
     @JsonIgnore
-    String callerSpan;
+    private transient String callerSpan;
+
     @JsonIgnore
-    String span;
-    @JsonIgnore
-    String traceId;
+    private transient String span;
+
 
     LogEntry() {
 
@@ -101,4 +111,13 @@ public class LogEntry {
         this.traceId = traceId;
     }
 
+    @JsonIgnore
+    public HashMap<String, LogEntry> getMap() {
+        return map;
+    }
+
+    @JsonIgnore
+    public void setMap(HashMap<String, LogEntry> map) {
+        this.map = map;
+    }
 }
