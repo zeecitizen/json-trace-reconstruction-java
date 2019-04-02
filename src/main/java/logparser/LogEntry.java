@@ -119,7 +119,7 @@ public class LogEntry implements Comparable<LogEntry> {
 
     @Override
     public int compareTo(LogEntry x) {
-
+        //TODO: Must implement this to facilitate sorting of trace logs when producing JSON Output.
         return 0;
     }
 }
