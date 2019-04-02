@@ -6,7 +6,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.gson.annotations.SerializedName;
 
-public class LogEntry {
+public class LogEntry implements Comparable<LogEntry> {
 
     @SerializedName("id")
     transient String traceId;
@@ -31,19 +31,6 @@ public class LogEntry {
 
     @JsonIgnore
     private transient String span;
-
-
-    LogEntry() {
-
-    }
-
-    public void addNeighbor(LogEntry node) {
-        if (!map.containsKey(node.getName())) {
-            if (!calls.contains(node))
-                calls.add(node);
-            map.put(node.getName(), node);
-        }
-    }
 
     private String getName() {
         return traceId + span;
@@ -119,5 +106,20 @@ public class LogEntry {
     @JsonIgnore
     public void setMap(HashMap<String, LogEntry> map) {
         this.map = map;
+    }
+
+    @Deprecated
+    public void addNeighbor(LogEntry node) {
+        if (!map.containsKey(node.getName())) {
+            if (!calls.contains(node))
+                calls.add(node);
+            map.put(node.getName(), node);
+        }
+    }
+
+    @Override
+    public int compareTo(LogEntry x) {
+
+        return 0;
     }
 }
